@@ -30,19 +30,24 @@ class PostgresDB implements Database {
   }
 
   async init() {
-    // Create tables if they don't exist
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS groups (
-        id TEXT PRIMARY KEY,
-        data JSONB
-      );
-      CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        group_id TEXT,
-        data JSONB,
-        created_at BIGINT
-      );
-    `);
+    try {
+      // Create tables if they don't exist
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS groups (
+          id TEXT PRIMARY KEY,
+          data JSONB
+        );
+        CREATE TABLE IF NOT EXISTS messages (
+          id TEXT PRIMARY KEY,
+          group_id TEXT,
+          data JSONB,
+          created_at BIGINT
+        );
+      `);
+      console.log("Database initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize database:", error);
+    }
   }
 
   async getGroups() {
