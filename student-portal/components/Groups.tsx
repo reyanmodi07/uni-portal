@@ -90,6 +90,23 @@ const Groups: React.FC<GroupsProps> = ({ messages, setMessages, groups = [], set
         });
     });
 
+    // Listen for new groups created by others
+    socket.on('group_created', (newGroup: Group) => {
+        if (setGroups) {
+            setGroups(prev => {
+                if (prev.some(g => g.id === newGroup.id)) return prev;
+                return [...prev, newGroup];
+            });
+        }
+    });
+
+    // Listen for group updates (e.g. new members)
+    socket.on('group_updated', (updatedGroup: Group) => {
+        if (setGroups) {
+            setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+        }
+    });
+
     socket.on('receive_message', (message: Message) => {
         setMessages(prev => {
             if (prev.some(m => m.id === message.id)) return prev;
@@ -113,6 +130,33 @@ const Groups: React.FC<GroupsProps> = ({ messages, setMessages, groups = [], set
         socket.disconnect();
     };
   }, []); // Run once on mount
+
+  // Fetch all groups from server on mount to ensure we have the latest list
+  useEffect(() => {
+      const fetchGroups = async () => {
+          if (!setGroups) return;
+          try {
+              const res = await fetch('/api/groups');
+              if (res.ok) {
+                  const serverGroups: Group[] = await res.json();
+                  // Merge with local groups, preferring server data but keeping local 'me' membership if needed?
+                  // Actually, for simplicity, let's just trust the server for existence, 
+                  // but we need to be careful not to overwrite local 'members' array if the server doesn't know 'me' is a member yet.
+                  // However, since we don't have real auth, 'me' is just a string.
+                  // Let's just update the list of available groups so join codes work.
+                  
+                  setGroups(prev => {
+                      const existingIds = new Set(prev.map(g => g.id));
+                      const newGroups = serverGroups.filter(g => !existingIds.has(g.id));
+                      return [...prev, ...newGroups];
+                  });
+              }
+          } catch (err) {
+              console.error("Failed to fetch groups:", err);
+          }
+      };
+      fetchGroups();
+  }, []);
 
   // Join group when active group changes (to ensure we get history/updates)
   useEffect(() => {
@@ -169,8 +213,12 @@ const Groups: React.FC<GroupsProps> = ({ messages, setMessages, groups = [], set
     const groupToJoin = groups.find(g => g.inviteCode === joinCode.trim());
     if (groupToJoin) {
         if (!groupToJoin.members.includes('me')) {
+            // Optimistic update
             const updatedGroup = { ...groupToJoin, members: [...groupToJoin.members, 'me'] };
             setGroups(prev => prev.map(g => g.id === groupToJoin.id ? updatedGroup : g));
+            
+            // Notify server to update DB
+            socketRef.current?.emit('join_group_member', { groupId: groupToJoin.id, userId: 'me' });
         }
         socketRef.current?.emit('join_group', groupToJoin.id);
         setActiveGroupId(groupToJoin.id);

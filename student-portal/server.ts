@@ -57,6 +57,18 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  app.get("/api/groups", async (req, res) => {
+    try {
+      const groups = await db.getGroups();
+      // Convert object to array if needed, or just return values
+      const groupsArray = Object.values(groups);
+      res.json(groupsArray);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      res.status(500).json({ error: "Failed to fetch groups" });
+    }
+  });
+
   // --- Socket.IO Logic ---
 
   io.on("connection", (socket) => {
@@ -88,6 +100,18 @@ async function startServer() {
     socket.on("create_group", async (group) => {
       await db.saveGroup(group);
       io.emit("group_created", group); // Broadcast to all connected clients
+    });
+
+    socket.on("join_group_member", async (data) => {
+        const { groupId, userId } = data;
+        const groups = await db.getGroups();
+        const group = groups[groupId];
+        
+        if (group && !group.members.includes(userId)) {
+            group.members.push(userId);
+            await db.saveGroup(group);
+            io.emit("group_updated", group); // Broadcast update to everyone
+        }
     });
 
     socket.on("update_poll", async (data) => {
