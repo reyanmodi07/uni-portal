@@ -666,6 +666,16 @@ const Dashboard: React.FC<DashboardProps> = ({ subjects, tasks, timetable, userN
              <p className="text-lg md:text-xl font-medium text-zinc-300 leading-relaxed">{dailyThought || "Loading insight..."}</p>
           </div>
       </motion.div>
+
+      {/* Developer Contact Info */}
+      <motion.div variants={itemVariants} className="mt-8 text-center pb-4">
+        <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">
+          Created by <span className="text-zinc-900 dark:text-white font-bold">Reyan Modi</span>
+        </p>
+        <a href="mailto:reyanmodi07@gmail.com" className="text-zinc-400 hover:text-indigo-500 text-xs mt-1 transition-colors inline-block">
+          reyanmodi07@gmail.com
+        </a>
+      </motion.div>
     </motion.div>
   );
 };
