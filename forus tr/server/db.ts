@@ -171,7 +171,7 @@ class LocalDB implements Database {
 export const getDatabase = (): Database => {
   if (process.env.DATABASE_URL) {
     console.log("Using PostgreSQL Database");
-    return new PostgresDB(process.env.DATABASE_URL);
+    return new PostgresDB("postgresql://neondb_owner:npg_5JqMaZh2XpRS@ep-divine-poetry-ai9znhgr-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require");
   }
   console.log("Using Local File Database (Fallback)");
   return new LocalDB();
